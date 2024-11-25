@@ -1,0 +1,38 @@
+pipeline {
+    agent any
+    tools {
+        maven 'maven'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning repository...'
+                git branch: 'main', url: "${env.GIT_REPO}"
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh '''
+                    echo "Stopping spring application processer"
+                    sudo pkill -f target/ecommerce-0.0.1-SNAPSHOT.jar
+                    # Start the Spring application
+                    echo "Starting the Spring application..."
+                    sudo java -jar target/ecommerce-0.0.1-SNAPSHOT.jar > /dev/null 2>&1 &
+                '''
+            }
+        }
+    }
+    post {
+        success {
+            echo "Deployed successfully"
+        }
+        failure {
+            echo "Failed to Deploy"
+        }
+    }
+}
